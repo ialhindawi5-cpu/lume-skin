@@ -10,13 +10,26 @@
   var $ = function (s, c) { return (c || document).querySelector(s); };
   var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
   var initials = function (name) {
-    return name.trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join("").toUpperCase();
+    return String(name).trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join("").toUpperCase();
   };
+  var load = function (key, fallback) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; } };
+  var save = function (key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} };
+
+  /* Toast */
+  var toastEl = $("#toast");
+  function toast(msg, isError) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.className = "toast is-show" + (isError ? " is-error" : "");
+    toastEl.hidden = false;
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { toastEl.className = "toast"; toastEl.hidden = true; }, 3500);
+  }
 
   /* ============================================================
      MOCK DATA
      ============================================================ */
-  var appointments = [
+  var appointments = load("lume_appointments", [
     { name: "Sarah Mitchell", treatment: "Laser Hair Removal", date: "Today", time: "9:30 AM", clinician: "Nurse Amelia", status: "Confirmed" },
     { name: "Chloe Turner", treatment: "Anti-Ageing Injectables", date: "Today", time: "10:15 AM", clinician: "Dr. Hana", status: "Confirmed" },
     { name: "Priya Nair", treatment: "Skin Rejuvenation", date: "Today", time: "11:00 AM", clinician: "Nurse Amelia", status: "Pending" },
@@ -27,9 +40,9 @@
     { name: "Isla Robinson", treatment: "Advanced Facial", date: "16 Jul", time: "10:00 AM", clinician: "Therapist Mia", status: "Completed" },
     { name: "Grace Lee", treatment: "Skin Rejuvenation", date: "15 Jul", time: "4:00 PM", clinician: "Dr. Hana", status: "Completed" },
     { name: "Hannah Scott", treatment: "Anti-Ageing Injectables", date: "14 Jul", time: "11:30 AM", clinician: "Dr. Hana", status: "Cancelled" }
-  ];
+  ]);
 
-  var clients = [
+  var clients = load("lume_clients", [
     { name: "Sarah Mitchell", email: "sarah.m@email.com", phone: "0412 334 556", visits: 14, last: "12 Jul 2026", ltv: "$3,240", status: "VIP" },
     { name: "Chloe Turner", email: "chloe.t@email.com", phone: "0433 221 908", visits: 9, last: "10 Jul 2026", ltv: "$2,110", status: "Active" },
     { name: "Priya Nair", email: "priya.n@email.com", phone: "0401 556 233", visits: 6, last: "08 Jul 2026", ltv: "$1,480", status: "Active" },
@@ -37,16 +50,16 @@
     { name: "Olivia Brown", email: "liv.b@email.com", phone: "0422 118 774", visits: 2, last: "01 Jul 2026", ltv: "$390", status: "New" },
     { name: "Emma Davis", email: "emma.d@email.com", phone: "0466 220 551", visits: 11, last: "28 Jun 2026", ltv: "$2,880", status: "Active" },
     { name: "Sophie Clark", email: "sophie.c@email.com", phone: "0477 332 019", visits: 1, last: "26 Jun 2026", ltv: "$180", status: "New" }
-  ];
+  ]);
 
-  var treatments = [
+  var treatments = load("lume_treatments", [
     { name: "Laser Hair Removal", desc: "Full body or per-area laser treatment for all skin tones.", price: "$99+", dur: "30–60 min" },
     { name: "Skin Rejuvenation", desc: "Microneedling & resurfacing for texture and firmness.", price: "$249", dur: "60 min" },
     { name: "Anti-Ageing Injectables", desc: "Wrinkle-relaxing & dermal filler by registered nurses.", price: "$320", dur: "45 min" },
     { name: "Advanced Facial", desc: "Medical-grade facial with peel & LED therapy.", price: "$180", dur: "60 min" },
     { name: "Pigmentation Program", desc: "Targeted treatment for melasma & sun damage.", price: "$275", dur: "45 min" },
     { name: "Body & Skin Tightening", desc: "Non-invasive RF contouring and firming.", price: "$210", dur: "50 min" }
-  ];
+  ]);
 
   var reviews = [
     { name: "Sarah M.", loc: "Bondi, NSW", stars: 5, text: "The team genuinely cares. My skin has never looked better." },
@@ -544,12 +557,72 @@
     setTimeout(function () { toast.hidden = true; toast.textContent = "✓ Content saved — refresh your website tab to see it live."; }, 4000);
   });
 
-  /* Logout */
-  $("#logout").addEventListener("click", function (e) {
-    e.preventDefault();
+  /* Logout (sidebar + topbar) */
+  function doLogout(e) {
+    if (e) e.preventDefault();
     fetch("/api/logout", { method: "POST" }).finally(function () {
       window.location.href = "login.html";
     });
+  }
+  $("#logout").addEventListener("click", doLogout);
+  if ($("#logoutTop")) $("#logoutTop").addEventListener("click", doLogout);
+
+  /* Sample action buttons (persist to this browser) */
+  function addAppointment() {
+    var name = window.prompt("Client name?");
+    if (!name) return;
+    var treatment = window.prompt("Treatment?", "Skin Rejuvenation") || "Consultation";
+    var date = window.prompt("Date? (e.g. Today, 20 Jul)", "Today") || "Today";
+    var time = window.prompt("Time? (e.g. 2:30 PM)", "2:30 PM") || "";
+    appointments.unshift({ name: name, treatment: treatment, date: date, time: time, clinician: "Unassigned", status: "Pending" });
+    save("lume_appointments", appointments);
+    renderAppointments("all"); renderDashboardLists();
+    toast("✓ Appointment added");
+  }
+  function addClient() {
+    var name = window.prompt("Client name?");
+    if (!name) return;
+    var email = window.prompt("Email?", "") || "—";
+    var phone = window.prompt("Phone?", "") || "—";
+    clients.unshift({ name: name, email: email, phone: phone, visits: 0, last: "—", ltv: "$0", status: "New" });
+    save("lume_clients", clients);
+    rendered.clients = false; ensureRendered("clients"); renderClients();
+    toast("✓ Client added");
+  }
+  function addTreatment() {
+    var name = window.prompt("Treatment name?");
+    if (!name) return;
+    var price = window.prompt("Price? (e.g. $180)", "$0") || "$0";
+    var dur = window.prompt("Duration? (e.g. 45 min)", "45 min") || "—";
+    var desc = window.prompt("Short description?", "") || "";
+    treatments.push({ name: name, desc: desc, price: price, dur: dur });
+    save("lume_treatments", treatments);
+    renderTreatments();
+    toast("✓ Treatment added");
+  }
+  function saveSettings() {
+    var data = {};
+    $$(".view[data-view='settings'] input").forEach(function (inp, i) { data["f" + i] = inp.type === "checkbox" ? inp.checked : inp.value; });
+    save("lume_settings", data);
+    toast("✓ Settings saved");
+  }
+
+  document.addEventListener("click", function (e) {
+    var action = e.target.getAttribute && e.target.getAttribute("data-action");
+    if (!action) return;
+    if (action === "add-appointment") addAppointment();
+    else if (action === "add-client") addClient();
+    else if (action === "add-treatment") addTreatment();
+    else if (action === "save-settings") saveSettings();
+  });
+
+  /* Friendly feedback for sample row buttons (Manage / Reply) that have no data-* hooks */
+  document.addEventListener("click", function (e) {
+    var el = e.target;
+    if (el.classList && el.classList.contains("row-btn") &&
+        !el.getAttribute("data-reset") && !el.getAttribute("data-remove")) {
+      toast("Sample record — full record management is coming with the database.");
+    }
   });
 
   /* ============================================================

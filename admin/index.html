@@ -53,6 +53,7 @@
               <span>Clinic Manager</span>
             </div>
           </div>
+          <button class="abtn abtn--ghost topbar-logout" id="logoutTop">Sign out</button>
         </div>
       </header>
 
@@ -65,7 +66,7 @@
               <h1>Good morning, Amani 👋</h1>
               <p class="view__sub">Here's what's happening at the clinic today.</p>
             </div>
-            <button class="abtn abtn--solid">+ New Appointment</button>
+            <button class="abtn abtn--solid" data-action="add-appointment">+ New Appointment</button>
           </div>
 
           <div class="stats">
@@ -122,7 +123,7 @@
         <section class="view" data-view="appointments">
           <div class="view__head">
             <div><h1>Appointments</h1><p class="view__sub">Manage upcoming and past bookings.</p></div>
-            <button class="abtn abtn--solid">+ New Appointment</button>
+            <button class="abtn abtn--solid" data-action="add-appointment">+ New Appointment</button>
           </div>
           <div class="toolbar">
             <div class="chips">
@@ -147,7 +148,7 @@
         <section class="view" data-view="clients">
           <div class="view__head">
             <div><h1>Clients</h1><p class="view__sub">Your client directory.</p></div>
-            <button class="abtn abtn--solid">+ Add Client</button>
+            <button class="abtn abtn--solid" data-action="add-client">+ Add Client</button>
           </div>
           <div class="panel panel--flush">
             <table class="table" id="clientTable">
@@ -163,7 +164,7 @@
         <section class="view" data-view="treatments">
           <div class="view__head">
             <div><h1>Treatments &amp; Services</h1><p class="view__sub">Pricing and duration for your service menu.</p></div>
-            <button class="abtn abtn--solid">+ Add Treatment</button>
+            <button class="abtn abtn--solid" data-action="add-treatment">+ Add Treatment</button>
           </div>
           <div class="cards" id="treatmentCards"></div>
         </section>
@@ -265,7 +266,7 @@
             <label class="switch"><input type="checkbox" checked /> Email me when a new enquiry arrives</label>
             <label class="switch"><input type="checkbox" checked /> SMS appointment reminders to clients</label>
             <label class="switch"><input type="checkbox" /> Allow online self-booking</label>
-            <div style="margin-top:22px"><button class="abtn abtn--solid">Save Changes</button></div>
+            <div style="margin-top:22px"><button class="abtn abtn--solid" data-action="save-settings">Save Changes</button></div>
           </div>
         </section>
 
@@ -274,6 +275,7 @@
   </div>
 
   <div class="backdrop" id="backdrop"></div>
+  <div class="toast" id="toast" hidden></div>
   <script src="admin.js"></script>
 </body>
 </html>
