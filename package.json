@@ -2,6 +2,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@vercel/edge": "^1.1.1"
+    "@vercel/edge": "^1.1.1",
+    "@vercel/postgres": "^0.10.0",
+    "nodemailer": "^6.9.14"
   }
 }

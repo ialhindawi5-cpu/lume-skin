@@ -390,6 +390,103 @@
   }
 
   /* ============================================================
+     ADMIN USERS (server-backed)
+     ============================================================ */
+  function userToast(msg, isError) {
+    var t = $("#userToast");
+    t.textContent = msg;
+    t.hidden = false;
+    t.style.background = isError ? "#f6e8e5" : "var(--sand-100)";
+    t.style.borderColor = isError ? "#e3b7ae" : "var(--clay)";
+    t.style.color = isError ? "#b5503f" : "var(--brand)";
+    clearTimeout(userToast._t);
+    userToast._t = setTimeout(function () { t.hidden = true; }, 6000);
+  }
+
+  function renderUsers() {
+    var tbody = $("#usersTable tbody");
+    tbody.innerHTML = '<tr><td colspan="6" class="muted-sm" style="padding:22px">Loading…</td></tr>';
+    fetch("/api/users", { headers: { "accept": "application/json" } })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (r) {
+        if (!r.ok) {
+          tbody.innerHTML = '<tr><td colspan="6" class="muted-sm" style="padding:22px">' +
+            esc((r.d && r.d.error) || "Could not load users. Is the database connected?") + "</td></tr>";
+          return;
+        }
+        var me = r.d.me;
+        var rows = r.d.users || [];
+        if (!rows.length) { tbody.innerHTML = '<tr><td colspan="6" class="muted-sm" style="padding:22px">No users yet.</td></tr>'; return; }
+        tbody.innerHTML = rows.map(function (u) {
+          var when = u.created_at ? new Date(u.created_at).toLocaleDateString("en-AU") : "—";
+          var isOwner = u.role === "owner";
+          var isMe = u.email === me;
+          var actions = (isOwner || isMe) ? '<span class="muted-sm">—</span>' :
+            '<button class="row-btn" data-reset="' + esc(u.email) + '">Reset password</button> ' +
+            '<button class="row-btn" data-remove="' + esc(u.email) + '">Remove</button>';
+          return "<tr>" +
+            '<td><div class="td-name"><span class="av">' + initials(u.name || u.email) + "</span><strong>" + esc(u.name || "—") + (isMe ? ' <span class="muted-sm">(you)</span>' : "") + "</strong></div></td>" +
+            "<td>" + esc(u.email) + "</td>" +
+            '<td><span class="badge badge--' + (isOwner ? "VIP" : "Active") + '">' + esc(u.role) + "</span></td>" +
+            '<td><span class="badge badge--' + (u.status === "active" ? "Confirmed" : (u.status === "invited" ? "Pending" : "Cancelled")) + '">' + esc(u.status) + "</span></td>" +
+            "<td>" + esc(when) + "</td>" +
+            '<td style="white-space:nowrap">' + actions + "</td>" +
+            "</tr>";
+        }).join("");
+      })
+      .catch(function () { tbody.innerHTML = '<tr><td colspan="6" class="muted-sm" style="padding:22px">Network error.</td></tr>'; });
+  }
+
+  function wireUsers() {
+    var inviteBtn = $("#inviteBtn");
+    if (inviteBtn) {
+      inviteBtn.addEventListener("click", function () {
+        var email = $("#inviteEmail").value.trim();
+        var name = $("#inviteName").value.trim();
+        if (!email) { userToast("Enter an email to invite.", true); return; }
+        inviteBtn.disabled = true; inviteBtn.textContent = "Sending…";
+        fetch("/api/invite", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email: email, name: name })
+        }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+          .then(function (r) {
+            if (r.ok) { userToast("✓ Invite sent to " + email); $("#inviteEmail").value = ""; $("#inviteName").value = ""; renderUsers(); }
+            else { userToast((r.d && r.d.error) || "Could not send invite.", true); }
+          }).catch(function () { userToast("Network error.", true); })
+          .then(function () { inviteBtn.disabled = false; inviteBtn.textContent = "Send Invite"; });
+      });
+    }
+
+    // Delegated reset / remove
+    var table = $("#usersTable");
+    if (table) {
+      table.addEventListener("click", function (e) {
+        var resetEmail = e.target.getAttribute && e.target.getAttribute("data-reset");
+        var removeEmail = e.target.getAttribute && e.target.getAttribute("data-remove");
+        if (resetEmail) {
+          e.target.disabled = true;
+          fetch("/api/reset-request", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ email: resetEmail })
+          }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+            .then(function (r) { userToast(r.ok ? "✓ Reset link emailed to " + resetEmail : ((r.d && r.d.error) || "Failed."), !r.ok); })
+            .catch(function () { userToast("Network error.", true); })
+            .then(function () { e.target.disabled = false; });
+        }
+        if (removeEmail) {
+          if (!window.confirm("Remove " + removeEmail + " from the admins?")) return;
+          fetch("/api/users", {
+            method: "POST", headers: { "content-type": "application/json" },
+            body: JSON.stringify({ action: "remove", email: removeEmail })
+          }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+            .then(function (r) { userToast(r.ok ? "✓ Removed " + removeEmail : ((r.d && r.d.error) || "Failed."), !r.ok); if (r.ok) renderUsers(); })
+            .catch(function () { userToast("Network error.", true); });
+        }
+      });
+    }
+  }
+
+  /* ============================================================
      NAVIGATION
      ============================================================ */
   var rendered = { appointments: false, clients: false, treatments: false, reviews: false, enquiries: false, content: false, images: false };
@@ -400,6 +497,7 @@
     if (view === "reviews" && !rendered.reviews) { renderReviews(); rendered.reviews = true; }
     if (view === "content" && !rendered.content) { renderContentEditor(); rendered.content = true; }
     if (view === "images" && !rendered.images) { renderImageEditor(); rendered.images = true; }
+    if (view === "users") { renderUsers(); }
     if (view === "enquiries") { renderEnquiries(); }
   }
 
@@ -461,4 +559,5 @@
   renderBarChart();
   renderLineChart();
   renderEnquiries(); // populates the enquiry counter badge on load
+  wireUsers();
 })();

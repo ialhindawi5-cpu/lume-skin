@@ -27,6 +27,7 @@
         <a href="#" class="nav-link" data-view="images"><span class="ni">▤</span> Images</a>
         <a href="#" class="nav-link" data-view="enquiries"><span class="ni">✉</span> Enquiries <b class="pill pill--alert" id="enqCount">0</b></a>
         <a href="#" class="nav-link" data-view="reviews"><span class="ni">★</span> Reviews</a>
+        <a href="#" class="nav-link" data-view="users"><span class="ni">◔</span> Admin Users</a>
         <a href="#" class="nav-link" data-view="settings"><span class="ni">⚙</span> Settings</a>
       </nav>
       <div class="sidebar__foot">
@@ -218,6 +219,33 @@
             <div class="rs__bars" id="ratingBars"></div>
           </div>
           <div class="cards" id="reviewCards"></div>
+        </section>
+
+        <!-- ADMIN USERS VIEW -->
+        <section class="view" data-view="users">
+          <div class="view__head">
+            <div><h1>Admin Users</h1><p class="view__sub">Invite people to manage the clinic, and reset their passwords.</p></div>
+          </div>
+
+          <div class="panel" style="margin-bottom:18px">
+            <h2>Invite a new admin</h2>
+            <p class="save-toast" id="userToast" hidden></p>
+            <div class="invite-row">
+              <input type="text" id="inviteName" placeholder="Full name (optional)" />
+              <input type="email" id="inviteEmail" placeholder="email@example.com" />
+              <button class="abtn abtn--solid" id="inviteBtn">Send Invite</button>
+            </div>
+            <p class="form__fine" style="margin-top:12px;color:var(--taupe);font-size:0.8rem">An email with a secure link is sent so they can set their own password.</p>
+          </div>
+
+          <div class="panel panel--flush">
+            <table class="table" id="usersTable">
+              <thead>
+                <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Added</th><th></th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </section>
 
         <!-- SETTINGS VIEW -->

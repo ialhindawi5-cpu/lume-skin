@@ -1,63 +1,31 @@
-// Secure admin login — verifies credentials server-side and issues a signed,
-// HttpOnly session cookie. Credentials live in Vercel environment variables.
-export const config = { runtime: 'edge' };
+// Admin login — verifies against the admin_users table and issues a session cookie.
+import { sql } from '../lib/db.js';
+import { verifyPassword, createSession } from '../lib/crypto.js';
 
-const enc = new TextEncoder();
-
-function b64url(bytes) {
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-function b64urlStr(str) { return b64url(enc.encode(str)); }
-
-async function sign(data, secret) {
-  const key = await crypto.subtle.importKey(
-    'raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  );
-  const sig = new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(data)));
-  return b64url(sig);
-}
-async function createToken(secret, ttl) {
-  const exp = Math.floor(Date.now() / 1000) + ttl;
-  const payload = b64urlStr(JSON.stringify({ exp }));
-  const sig = await sign(payload, secret);
-  return payload + '.' + sig;
-}
-function json(obj, status) {
-  return new Response(JSON.stringify(obj), {
-    status, headers: { 'content-type': 'application/json' }
-  });
-}
-
-export default async function handler(req) {
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const secret = process.env.AUTH_SECRET;
-  const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
-  const adminPass = process.env.ADMIN_PASSWORD || '';
+  if (!secret) return res.status(503).json({ error: 'Login is not configured yet.' });
 
-  if (!secret || !adminEmail || !adminPass) {
-    return json({ error: 'Login is not configured yet. Ask the site owner to set the admin credentials.' }, 503);
-  }
+  const body = req.body || {};
+  const email = String(body.email || '').trim().toLowerCase();
+  const password = String(body.password || '');
 
-  let body = {};
-  try { body = await req.json(); } catch (e) { /* empty body */ }
-  const email = (body.email || '').trim().toLowerCase();
-  const password = body.password || '';
-
-  if (email !== adminEmail || password !== adminPass) {
-    return json({ error: 'Incorrect email or password.' }, 401);
-  }
-
-  const ttl = 60 * 60 * 8; // 8 hours
-  const token = await createToken(secret, ttl);
-
-  return new Response(JSON.stringify({ ok: true }), {
-    status: 200,
-    headers: {
-      'content-type': 'application/json',
-      'set-cookie': `lume_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${ttl}`
+  try {
+    const { rows } = await sql`
+      SELECT email, password_hash, role FROM admin_users
+      WHERE email = ${email} AND status = 'active' LIMIT 1`;
+    const user = rows[0];
+    if (!user || !verifyPassword(password, user.password_hash)) {
+      return res.status(401).json({ error: 'Incorrect email or password.' });
     }
-  });
+    const ttl = 60 * 60 * 8; // 8 hours
+    const token = createSession(secret, ttl, { email: user.email, role: user.role });
+    res.setHeader('Set-Cookie',
+      `lume_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${ttl}`);
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: 'Login is temporarily unavailable. Please try again.' });
+  }
 }

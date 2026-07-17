@@ -43,8 +43,11 @@ function getCookie(req, name) {
 export default async function middleware(req) {
   const { pathname } = new URL(req.url);
 
-  // Public: the login screen and the shared stylesheet it needs.
-  if (pathname === '/admin/login.html' || pathname === '/admin/admin.css') {
+  // Public: login, invite-accept, reset pages, and the shared stylesheet.
+  if (pathname === '/admin/login.html' ||
+      pathname === '/admin/accept.html' ||
+      pathname === '/admin/reset.html' ||
+      pathname === '/admin/admin.css') {
     return next();
   }
 
