@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login · LUMÉ Skin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <div class="login-brand">
+      <span class="brand__mark">L</span>
+      <span class="brand__text">LUMÉ<em>Skin</em></span>
+    </div>
+    <h1>Admin Portal</h1>
+    <p class="login-sub">Sign in to manage bookings, clients and clinic operations.</p>
+
+    <p class="login-error" id="loginError" hidden></p>
+
+    <form id="loginForm" novalidate>
+      <div class="field">
+        <label for="user">Email</label>
+        <input type="email" id="user" autocomplete="username" placeholder="you@lume-skin.com.au" required />
+      </div>
+      <div class="field">
+        <label for="pass">Password</label>
+        <input type="password" id="pass" autocomplete="current-password" placeholder="Enter your password" required />
+      </div>
+      <div class="login-row">
+        <label class="check"><input type="checkbox" checked /> Remember me</label>
+        <a href="#">Forgot password?</a>
+      </div>
+      <button type="submit" class="abtn abtn--solid abtn--block" id="loginBtn">Sign In</button>
+      <p class="login-hint">Secure sign-in — your credentials are verified on the server.</p>
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      var form = document.getElementById("loginForm");
+      var btn = document.getElementById("loginBtn");
+      var err = document.getElementById("loginError");
+
+      function showError(msg) { err.textContent = msg; err.hidden = false; }
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        err.hidden = true;
+        btn.disabled = true;
+        btn.textContent = "Signing in…";
+
+        fetch("/api/login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            email: document.getElementById("user").value,
+            password: document.getElementById("pass").value
+          })
+        }).then(function (res) {
+          return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+        }).then(function (r) {
+          if (r.ok) {
+            window.location.href = "index.html";
+          } else {
+            showError((r.data && r.data.error) || "Sign in failed. Please try again.");
+            btn.disabled = false;
+            btn.textContent = "Sign In";
+          }
+        }).catch(function () {
+          showError("Network error. Please check your connection and try again.");
+          btn.disabled = false;
+          btn.textContent = "Sign In";
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Vercel (local project link + pulled env vars — never commit)
+.vercel/
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Logs & OS files
+*.log
+.DS_Store
+Thumbs.db
