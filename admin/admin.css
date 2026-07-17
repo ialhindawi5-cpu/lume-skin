@@ -58,6 +58,21 @@ input, select, button, textarea { font-family: inherit; }
 .login-hint { text-align: center; font-size: 0.78rem; color: var(--taupe); margin: 16px 0 0; }
 .login-error { background: #f6e8e5; border: 1px solid #e3b7ae; color: #b5503f; padding: 11px 15px; border-radius: 10px; font-size: 0.86rem; margin: 0 0 18px; text-align: center; }
 
+/* Password show/hide */
+.pass-wrap { position: relative; }
+.pass-wrap input { padding-right: 46px; }
+.pass-toggle {
+  position: absolute; top: 50%; right: 8px; transform: translateY(-50%);
+  width: 34px; height: 34px; display: grid; place-items: center;
+  background: none; border: 0; cursor: pointer; color: var(--taupe);
+  border-radius: 8px; transition: color 0.2s, background 0.2s;
+}
+.pass-toggle:hover { color: var(--brand); background: var(--beige-1); }
+.pass-toggle svg { width: 20px; height: 20px; }
+.pass-toggle .ic-eyeoff { display: none; }
+.pass-toggle.is-shown .ic-eye { display: none; }
+.pass-toggle.is-shown .ic-eyeoff { display: block; }
+
 .field { margin-bottom: 16px; }
 .field label { display: block; font-size: 0.8rem; color: var(--ink-soft); margin-bottom: 6px; }
 .field input, .field select { width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 11px; font-size: 0.94rem; font-weight: 300; color: var(--ink); background: #fff; transition: 0.25s; }
