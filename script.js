@@ -34,6 +34,26 @@
     });
   })();
 
+  /* ---- Apply an uploaded logo image (replaces the text logo) ---- */
+  (function applyLogo() {
+    var url;
+    try { url = (JSON.parse(localStorage.getItem("lume_images") || "{}")).logo; }
+    catch (e) { return; }
+    if (!url) return;
+    document.querySelectorAll(".brand").forEach(function (brand) {
+      var mark = brand.querySelector(".brand__mark");
+      var text = brand.querySelector(".brand__text");
+      if (mark) mark.style.display = "none";
+      if (text) text.style.display = "none";
+      if (brand.querySelector(".brand__img")) return;
+      var img = document.createElement("img");
+      img.src = url;
+      img.alt = "LUMÉ Skin";
+      img.className = "brand__img";
+      brand.insertBefore(img, brand.firstChild);
+    });
+  })();
+
   var header = document.getElementById("header");
   var burger = document.getElementById("burger");
   var nav = document.getElementById("nav");

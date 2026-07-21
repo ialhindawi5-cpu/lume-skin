@@ -511,6 +511,7 @@
     if (view === "content" && !rendered.content) { renderContentEditor(); rendered.content = true; }
     if (view === "images" && !rendered.images) { renderImageEditor(); rendered.images = true; }
     if (view === "users") { renderUsers(); }
+    if (view === "settings") { brandingInit(); }
     if (view === "enquiries") { renderEnquiries(); }
   }
 
@@ -600,6 +601,70 @@
     renderTreatments();
     toast("✓ Treatment added");
   }
+  /* ---- Branding & Logo editor (writes to the same keys the public site reads) ---- */
+  function brandingInit() {
+    var content = load("lume_content", {});
+    var images = load("lume_images", {});
+    if ($("#logoMark")) $("#logoMark").value = content.logo_mark || "L";
+    if ($("#logoName")) $("#logoName").value = content.logo_name || "LUMÉ";
+    if ($("#logoTagline")) $("#logoTagline").value = content.logo_tagline || "Skin";
+    if ($("#logoUrl")) $("#logoUrl").value = (images.logo && images.logo.indexOf("data:") !== 0) ? images.logo : "";
+    brandingPreview();
+
+    if (!brandingInit._wired) {
+      brandingInit._wired = true;
+      ["#logoMark", "#logoName", "#logoTagline", "#logoUrl"].forEach(function (sel) {
+        var el = $(sel); if (el) el.addEventListener("input", brandingPreview);
+      });
+      $("#logoUpload").addEventListener("change", function (e) {
+        var f = e.target.files && e.target.files[0];
+        if (!f) return;
+        if (f.size > 1.5 * 1024 * 1024) { toast("Logo is too large — use an image under ~1.5 MB or a URL.", true); return; }
+        var r = new FileReader();
+        r.onload = function () { $("#logoUpload").dataset.data = r.result; $("#logoUrl").value = ""; brandingPreview(); toast("Logo ready — click Save branding"); };
+        r.readAsDataURL(f);
+      });
+      $("#logoRemove").addEventListener("click", function () {
+        $("#logoUpload").value = ""; delete $("#logoUpload").dataset.data; $("#logoUrl").value = "";
+        brandingPreview(); toast("Logo image cleared — Save to apply");
+      });
+      $("#saveBranding").addEventListener("click", saveBranding);
+    }
+  }
+  function currentLogoImage() {
+    var upl = $("#logoUpload");
+    if (upl && upl.dataset && upl.dataset.data) return upl.dataset.data;
+    if ($("#logoUrl") && $("#logoUrl").value.trim()) return $("#logoUrl").value.trim();
+    return "";
+  }
+  function brandingPreview() {
+    var img = currentLogoImage();
+    if (img) {
+      $("#bpImg").src = img; $("#bpImg").hidden = false;
+      $("#bpMark").style.display = "none"; $("#bpImg").previousElementSibling.style.display = "none";
+    } else {
+      $("#bpImg").hidden = true;
+      $("#bpMark").style.display = ""; $("#bpImg").previousElementSibling.style.display = "";
+      $("#bpMark").textContent = ($("#logoMark").value || "L").slice(0, 2);
+      $("#bpName").textContent = $("#logoName").value || "LUMÉ";
+      $("#bpTagline").textContent = $("#logoTagline").value || "Skin";
+    }
+  }
+  function saveBranding() {
+    var content = load("lume_content", {});
+    content.logo_mark = ($("#logoMark").value || "L").slice(0, 2);
+    content.logo_name = $("#logoName").value || "LUMÉ";
+    content.logo_tagline = $("#logoTagline").value || "Skin";
+    save("lume_content", content);
+
+    var images = load("lume_images", {});
+    var logo = currentLogoImage();
+    if (logo) images.logo = logo; else delete images.logo;
+    save("lume_images", images);
+
+    toast("✓ Branding saved — refresh your website to see it");
+  }
+
   function saveSettings() {
     var data = {};
     $$(".view[data-view='settings'] input").forEach(function (inp, i) { data["f" + i] = inp.type === "checkbox" ? inp.checked : inp.value; });

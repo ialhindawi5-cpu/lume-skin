@@ -252,8 +252,36 @@
         <!-- SETTINGS VIEW -->
         <section class="view" data-view="settings">
           <div class="view__head">
-            <div><h1>Settings</h1><p class="view__sub">Clinic profile and preferences.</p></div>
+            <div><h1>Settings</h1><p class="view__sub">Branding, clinic profile and preferences.</p></div>
           </div>
+
+          <div class="panel">
+            <h2>Branding &amp; Logo</h2>
+            <p class="panel-sub">Upload a logo image, or customise the text logo. Changes apply to your live website.</p>
+            <div class="brand-editor">
+              <div class="brand-preview" id="brandPreview">
+                <span class="bp-mark" id="bpMark">L</span>
+                <span class="bp-text"><strong id="bpName">LUMÉ</strong><em id="bpTagline">Skin</em></span>
+                <img class="bp-img" id="bpImg" alt="logo preview" hidden />
+              </div>
+              <div class="brand-controls">
+                <label class="cfield-label">Logo image <span>(replaces the text logo)</span></label>
+                <div class="img-actions">
+                  <label class="abtn abtn--ghost img-upload">Upload image<input type="file" accept="image/*" id="logoUpload" hidden /></label>
+                  <button type="button" class="row-btn" id="logoRemove">Remove image</button>
+                </div>
+                <input type="text" class="img-url" id="logoUrl" placeholder="…or paste an image URL" />
+                <div class="brand-divider"><span>or use a text logo</span></div>
+                <div class="form-grid">
+                  <div class="field"><label>Circle letter</label><input id="logoMark" maxlength="2" value="L" /></div>
+                  <div class="field"><label>Brand name</label><input id="logoName" value="LUMÉ" /></div>
+                  <div class="field"><label>Tagline</label><input id="logoTagline" value="Skin" /></div>
+                </div>
+                <div style="margin-top:18px"><button class="abtn abtn--solid" id="saveBranding">Save branding</button></div>
+              </div>
+            </div>
+          </div>
+
           <div class="panel">
             <h2>Clinic Profile</h2>
             <div class="form-grid">
